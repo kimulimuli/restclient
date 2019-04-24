@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import reactor.core.publisher.Mono;
 
 import com.kimulimuli.restclient.json.JokeResponse;
 
@@ -11,6 +14,7 @@ import com.kimulimuli.restclient.json.JokeResponse;
 public class JokeService {
 
     private RestTemplate template;
+    private WebClient client = WebClient.create("http://api.icndb.com");
 
     @Autowired
     public JokeService(RestTemplateBuilder builder) {
@@ -23,5 +27,12 @@ public class JokeService {
         String url = String.format("%s&firstName=%s&lastName=%s", base, first, last);
 
         return template.getForObject(url, JokeResponse.class).getValue().getJoke();
+    }
+
+    public Mono<String> getJokeAsync(String first, String last) {
+        String path = "/jokes/random?limitTo=[nerdy]&firstName={first}&lastName={last}";
+        return client.get().uri(path, first, last).retrieve().bodyToMono(JokeResponse.class)
+                .map(jokeResponse -> jokeResponse.getValue().getJoke());
+
     }
 }
